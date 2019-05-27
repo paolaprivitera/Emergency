@@ -150,4 +150,112 @@ public class Simulatore {
 		else if (nuovoStatoPaziente == StatoPaziente.WAITING_RED)
 			nuovoStatoPaziente = StatoPaziente.WAITING_WHITE;
 	}
+
+	public int getNS() {
+		return NS;
+	}
+
+	public void setNS(int nS) {
+		NS = nS;
+	}
+
+	public int getNP() {
+		return NP;
+	}
+
+	public void setNP(int nP) {
+		NP = nP;
+	}
+
+	public Duration getT_ARRIVAL() {
+		return T_ARRIVAL;
+	}
+
+	public void setT_ARRIVAL(Duration t_ARRIVAL) {
+		T_ARRIVAL = t_ARRIVAL;
+	}
+
+	public LocalTime getT_inizio() {
+		return T_inizio;
+	}
+
+	public void setT_inizio(LocalTime t_inizio) {
+		T_inizio = t_inizio;
+	}
+
+	public LocalTime getT_fine() {
+		return T_fine;
+	}
+
+	public void setT_fine(LocalTime t_fine) {
+		T_fine = t_fine;
+	}
+
+	public int getDURATION_TRIAGE() {
+		return DURATION_TRIAGE;
+	}
+
+	public void setDURATION_TRIAGE(int dURATION_TRIAGE) {
+		DURATION_TRIAGE = dURATION_TRIAGE;
+	}
+
+	public int getDURATION_WHITE() {
+		return DURATION_WHITE;
+	}
+
+	public void setDURATION_WHITE(int dURATION_WHITE) {
+		DURATION_WHITE = dURATION_WHITE;
+	}
+
+	public int getDURATION_YELLOW() {
+		return DURATION_YELLOW;
+	}
+
+	public void setDURATION_YELLOW(int dURATION_YELLOW) {
+		DURATION_YELLOW = dURATION_YELLOW;
+	}
+
+	public int getDURATION_RED() {
+		return DURATION_RED;
+	}
+
+	public void setDURATION_RED(int dURATION_RED) {
+		DURATION_RED = dURATION_RED;
+	}
+
+	public int getTIMEOUT_WHITE() {
+		return TIMEOUT_WHITE;
+	}
+
+	public void setTIMEOUT_WHITE(int tIMEOUT_WHITE) {
+		TIMEOUT_WHITE = tIMEOUT_WHITE;
+	}
+
+	public int getTIMEOUT_YELLOW() {
+		return TIMEOUT_YELLOW;
+	}
+
+	public void setTIMEOUT_YELLOW(int tIMEOUT_YELLOW) {
+		TIMEOUT_YELLOW = tIMEOUT_YELLOW;
+	}
+
+	public int getTIMEOUT_RED() {
+		return TIMEOUT_RED;
+	}
+
+	public void setTIMEOUT_RED(int tIMEOUT_RED) {
+		TIMEOUT_RED = tIMEOUT_RED;
+	}
+
+	public int getNumDimessi() {
+		return numDimessi;
+	}
+
+	public int getNumAbbandoni() {
+		return numAbbandoni;
+	}
+
+	public int getNumMorti() {
+		return numMorti;
+	}
 }
