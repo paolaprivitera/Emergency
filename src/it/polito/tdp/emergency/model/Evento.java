@@ -44,5 +44,11 @@ public class Evento implements Comparable<Evento>{
 	public int compareTo(Evento other) {
 		return this.ora.compareTo(other.ora);
 	}
+	@Override
+	public String toString() {
+		return String.format("Evento [ora=%s, tipo=%s, paziente=%s]", ora, tipo, paziente);
+	}
+	
+	
 	
 }

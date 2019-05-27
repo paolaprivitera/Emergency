@@ -2,15 +2,22 @@ package it.polito.tdp.emergency.model;
 
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.PriorityQueue;
+
+import it.polito.tdp.emergency.model.Evento.TipoEvento;
+import it.polito.tdp.emergency.model.Paziente.StatoPaziente;
 
 public class Simulatore {
 
 	// Coda degli eventi
-	private PriorityQueue<Evento> queue = new PriorityQueue<>() ;
-	
+	private PriorityQueue<Evento> queue = new PriorityQueue<>();
+
 	// Modello del Mondo
-	
+	private List<Paziente> pazienti;
+	private int studiLiberi;
+
 	// Parametri di simulazione
 	private int NS = 3; // numero di studi medici
 	private int NP = 50; // numero di pazienti in arrivo
@@ -27,9 +34,120 @@ public class Simulatore {
 	private int TIMEOUT_YELLOW = 60;
 	private int TIMEOUT_RED = 90;
 
-	
 	// Statistiche da calcolare
-	
+	private int numDimessi;
+	private int numAbbandoni;
+	private int numMorti;
+
 	// Variabili interne
-	
+	private StatoPaziente nuovoStatoPaziente;
+
+	public Simulatore() {
+		this.pazienti = new ArrayList<Paziente>();
+	}
+
+	public void init() {
+		// Creare i pazienti
+		LocalTime oraArrivo = T_inizio;
+		pazienti.clear();
+		for (int i = 0; i < NP; i++) {
+			Paziente p = new Paziente(i + 1, oraArrivo);
+			pazienti.add(p);
+
+			oraArrivo = oraArrivo.plus(T_ARRIVAL);
+		}
+
+		// Creare gli studi medici
+		studiLiberi = NS;
+
+		nuovoStatoPaziente = nuovoStatoPaziente.WAITING_WHITE;
+
+		// Creare gli eventi iniziali
+		queue.clear();
+		for (Paziente p : pazienti) {
+			queue.add(new Evento(p.getOraArrivo(), TipoEvento.ARRIVO, p));
+		}
+
+		// Resettare le statistiche
+		numDimessi = 0;
+		numAbbandoni = 0;
+		numMorti = 0;
+	}
+
+	public void run() {
+
+		while (!queue.isEmpty()) {
+			Evento ev = queue.poll();
+			System.out.println(ev) ;
+
+			Paziente p = ev.getPaziente();
+
+			/*
+			 * se la simulazione dovesse terminare alle 20:00
+			 * if(ev.getOra().isAfter(T_fine)) break ;
+			 */
+
+			switch (ev.getTipo()) {
+
+			case ARRIVO:
+				// tra 5 minuti verrà assegnato un codice colore
+				queue.add(new Evento(ev.getOra().plusMinutes(DURATION_TRIAGE), TipoEvento.TRIAGE, ev.getPaziente()));
+				break;
+
+			case TRIAGE:
+				p.setStato(nuovoStatoPaziente);
+
+				if (p.getStato() == StatoPaziente.WAITING_WHITE)
+					queue.add(new Evento(ev.getOra().plusMinutes(TIMEOUT_WHITE), TipoEvento.TIMEOUT, p));
+				else if (p.getStato() == StatoPaziente.WAITING_YELLOW)
+					queue.add(new Evento(ev.getOra().plusMinutes(TIMEOUT_YELLOW), TipoEvento.TIMEOUT, p));
+				else if (p.getStato() == StatoPaziente.WAITING_RED)
+					queue.add(new Evento(ev.getOra().plusMinutes(TIMEOUT_RED), TipoEvento.TIMEOUT, p));
+
+				ruotaNuovoStatoPaziente();
+
+				break;
+
+			case VISITA:
+				// determina il paziente con max priorità
+				// paziente entra in uno studio
+				// studio diventa occupato
+				// schedula l'uscita (CURATO) del paziente
+				break;
+
+			case CURATO:
+				// paziente è fuori
+				// aggiorna numDimessi
+				// schedula evento VISITA "adesso"
+				break;
+
+			case TIMEOUT:
+				if (p.getStato() == StatoPaziente.WAITING_WHITE) {
+					p.setStato(StatoPaziente.OUT);
+					numAbbandoni++ ;
+				} else if (p.getStato() == StatoPaziente.WAITING_YELLOW) {
+					p.setStato(StatoPaziente.WAITING_RED);
+					queue.add(new Evento(ev.getOra().plusMinutes(TIMEOUT_RED), TipoEvento.TIMEOUT, p));
+				} else if (p.getStato() == StatoPaziente.WAITING_RED) {
+					p.setStato(StatoPaziente.BLACK);
+					numMorti++ ;
+				} else {
+					System.out.println("Timeout anomalo nello stato "+p.getStato()) ;
+				}
+
+				break;
+			}
+
+		}
+
+	}
+
+	private void ruotaNuovoStatoPaziente() {
+		if (nuovoStatoPaziente == StatoPaziente.WAITING_WHITE)
+			nuovoStatoPaziente = StatoPaziente.WAITING_YELLOW;
+		else if (nuovoStatoPaziente == StatoPaziente.WAITING_YELLOW)
+			nuovoStatoPaziente = StatoPaziente.WAITING_RED;
+		else if (nuovoStatoPaziente == StatoPaziente.WAITING_RED)
+			nuovoStatoPaziente = StatoPaziente.WAITING_WHITE;
+	}
 }
