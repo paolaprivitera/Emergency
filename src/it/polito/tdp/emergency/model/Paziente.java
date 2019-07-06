@@ -4,24 +4,31 @@ import java.time.LocalTime;
 
 public class Paziente {
 	
-	public enum StatoPaziente {
+	public enum StatoPaziente { // stato in cui si trova il paziente
+								// informazione propria del paziente
 		NEW,
 		WAITING_WHITE,
 		WAITING_YELLOW,
 		WAITING_RED,
-		TREATING,
+		TREATING, // in visita
 		OUT,
 		BLACK,
 	}
 	
-	private int id ;
+	private int id ; // modo per distinguere un paziente dall'altro
 	private StatoPaziente stato ;
-	private LocalTime oraArrivo ;
+	private LocalTime oraArrivo ; // ** ora simulata
 	
-	public Paziente(int id, LocalTime oraArrivo) {
+	public Paziente(int id, LocalTime oraArrivo) { // costruttore
 		this.id = id ;
 		this.oraArrivo = oraArrivo ;
-		this.stato = StatoPaziente.NEW ;
+		// ** a parita' di codice (colore), chiamo i pazienti in ordine di arrivo
+		// cioe' non chi ha aspettato di piu' ma chi e' arrivato prima!!!
+		// tra due codici rossi non prendo chi ha il codice rosso da piu' tempo
+		// ma chi e' in sala d'attesa da piu' tempo
+		// Quindi quando memorizziamo un paziente dobbiamo memorizzare
+		// anche l'informazione relativa a quando e' arrivato in sala d'attesa
+		this.stato = StatoPaziente.NEW ; // paziente che arriva dall'esterno 
 	}
 
 	public int getId() {

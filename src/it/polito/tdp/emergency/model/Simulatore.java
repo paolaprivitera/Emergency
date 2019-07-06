@@ -15,11 +15,14 @@ public class Simulatore {
 	private PriorityQueue<Evento> queue = new PriorityQueue<>();
 
 	// Modello del Mondo
-	private List<Paziente> pazienti;
+	private List<Paziente> pazienti; // pazienti
+	// Mi serve una lista di pazienti in attesa e poi la devo scandire
+	// per capire quale paziente far entrare nello studio in base alla priorita'
+	// allora faccio una coda prioritaria!
 	private PriorityQueue<Paziente> salaAttesa;
-	private int studiLiberi;
+	private int studiLiberi; // medici
 
-	// Parametri di simulazione
+	// Parametri di simulazione -> le costanti (in mano all'utente)
 	private int NS = 3; // numero di studi medici
 	private int NP = 50; // numero di pazienti in arrivo
 	private Duration T_ARRIVAL = Duration.ofMinutes(15); // intervallo di tempo tra i pazienti
@@ -41,42 +44,46 @@ public class Simulatore {
 	private int numMorti;
 
 	// Variabili interne
-	private StatoPaziente nuovoStatoPaziente;
+	// Meccanismo interno al simulatore per sapere quale triage simulare
+	private StatoPaziente nuovoStatoPaziente; // si ricorda qual e' il prossimo stato paziente da assegnare
+	
 	private Duration intervalloPolling = Duration.ofMinutes(5);
 
-	public Simulatore() {
+	public Simulatore() { // costruttore
 		this.pazienti = new ArrayList<Paziente>();
 	}
 
 	public void init() {
-		// Creare i pazienti
-		LocalTime oraArrivo = T_inizio;
-		pazienti.clear();
+		// 1. Creare i pazienti
+		LocalTime oraArrivo = T_inizio; // le 8 del mattino
+		pazienti.clear(); // poiche' init puo' essere chiamato piu' volte
 		for (int i = 0; i < NP; i++) {
-			Paziente p = new Paziente(i + 1, oraArrivo);
-			pazienti.add(p);
+			Paziente p = new Paziente(i + 1, oraArrivo); // creo un nuovo paziente
+			pazienti.add(p); 
 
-			oraArrivo = oraArrivo.plus(T_ARRIVAL);
+			// Attenzione al dettaglio
+			oraArrivo = oraArrivo.plus(T_ARRIVAL); // nuovo oggetto uguale a quello vecchio con la modifica applicata
 		}
 
 		// Inizializzo la sala d'attesa vuota
 		this.salaAttesa = new PriorityQueue<>(new PrioritaPaziente());
 
-		// Creare gli studi medici
+		// Creare gli studi medici -> inizializzo gli studi liberi
 		studiLiberi = NS;
 
+		// Inizializzo lo stato paziente
 		nuovoStatoPaziente = nuovoStatoPaziente.WAITING_WHITE;
 
-		// Creare gli eventi iniziali
-		queue.clear();
-		for (Paziente p : pazienti) {
+		// 2. Creare gli eventi iniziali
+		queue.clear(); // puliamo la coda per sicurezza anche se dovrebbe essere pulita
+		for (Paziente p : pazienti) { // Devo generare un evento di arrivo per ciascun paziente
 			queue.add(new Evento(p.getOraArrivo(), TipoEvento.ARRIVO, p));
 		}
 
 		// lancia l'osservatore in polling
 		queue.add(new Evento(T_inizio.plus(intervalloPolling), TipoEvento.POLLING, null));
 
-		// Resettare le statistiche
+		// 3. Resettare le statistiche
 		numDimessi = 0;
 		numAbbandoni = 0;
 		numMorti = 0;
@@ -98,28 +105,35 @@ public class Simulatore {
 			switch (ev.getTipo()) {
 
 			case ARRIVO:
-				// tra 5 minuti verrà assegnato un codice colore
+				// tra 5 minuti verra' assegnato un codice colore
 				queue.add(new Evento(ev.getOra().plusMinutes(DURATION_TRIAGE), TipoEvento.TRIAGE, ev.getPaziente()));
 				break;
+				
+				// devo aggiornare lo stato del mondo?
+				// ho cambiato qualcosa nelle informazioni dei pazienti?
+				// no, lo stato del paziente era new e rimane new fino a quando non prende un colore
+				// cambia il numero di studi disponibili? no
+				// devo aggiornare le statistiche? no
 
 			case TRIAGE:
 				p.setStato(nuovoStatoPaziente);
 
 				if (p.getStato() == StatoPaziente.WAITING_WHITE)
 					queue.add(new Evento(ev.getOra().plusMinutes(TIMEOUT_WHITE), TipoEvento.TIMEOUT, p));
+					// imposto il timeout dopo il quale te ne vai
 				else if (p.getStato() == StatoPaziente.WAITING_YELLOW)
 					queue.add(new Evento(ev.getOra().plusMinutes(TIMEOUT_YELLOW), TipoEvento.TIMEOUT, p));
 				else if (p.getStato() == StatoPaziente.WAITING_RED)
 					queue.add(new Evento(ev.getOra().plusMinutes(TIMEOUT_RED), TipoEvento.TIMEOUT, p));
 
-				salaAttesa.add(p);
+				salaAttesa.add(p); // aggiungo il paziente alla sala d'attesa
 
 				ruotaNuovoStatoPaziente();
 
 				break;
 
 			case VISITA:
-				// determina il paziente con max priorità
+				// determina il paziente con max priorita'�
 				Paziente pazChiamato = salaAttesa.poll();
 				if (pazChiamato == null)
 					break;
@@ -143,20 +157,38 @@ public class Simulatore {
 				break;
 
 			case CURATO:
-				// paziente è fuori
+				// paziente e' fuori
 				p.setStato(StatoPaziente.OUT);
 
 				// aggiorna numDimessi
 				numDimessi++;
 
-				// schedula evento VISITA "adesso"
+				// schedula evento VISITA "adesso" -> lo studio e' libero
 				studiLiberi++;
+				// Chiamo subito un nuovo paziente
 				queue.add(new Evento(ev.getOra(), TipoEvento.VISITA, null));
-
+				// RISCHIO: sto schedulando un evento VISITA anche se non c'e'
+				// nessuno in lista d'attesa
+				// Quindi aggiungo nel case VISITA un controllo nel caso in cui
+				// pazChiamato = null
+				
 				break;
 
+				// Meccanismo aggiuntivo per alimentare gli studi quando sono vuoti
+				// e ci sono persone in lista d'attesa
+				// c'e' uno studio libero -> non e' un evento
+				// ma una condizione del mondo
+				// Creo un meccanismo automatico per osservare lo stato:
+				// considero un evento che si ripete periodicamente il cui scopo sia
+				// osservare lo stato (stato di polling)
+				// da aggiungere alla coda degli eventi
+				// che nel caso in cui si verifichi una condizione (almeno una persona
+				// nello studio e almeno uno studio libero) scheduli un evento
+				// --> trasformare condizione di stato in evento da simulare
+				// L'osservatore e' un tipo di evento nuovo (POLLING)
+				
 			case TIMEOUT:
-				// rimuovi dalla lista d'attesa
+				// rimuovi il paziente dalla lista d'attesa
 				salaAttesa.remove(p) ;
 				
 				if (p.getStato() == StatoPaziente.WAITING_WHITE) {
@@ -180,8 +212,8 @@ public class Simulatore {
 				if (!salaAttesa.isEmpty() && studiLiberi > 0) {
 					queue.add(new Evento(ev.getOra(), TipoEvento.VISITA, null));
 				}
-				// rischedula sé stesso
-				if (ev.getOra().isBefore(T_fine)) {
+				// rischedula se stesso
+				if (ev.getOra().isBefore(T_fine)) { // perche' se no va all'infinito
 					queue.add(new Evento(ev.getOra().plus(intervalloPolling), TipoEvento.POLLING, null));
 				}
 				break ;

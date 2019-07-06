@@ -1,4 +1,4 @@
-package it.polito.tdp.emergency.model;
+ package it.polito.tdp.emergency.model;
 
 import java.time.LocalTime;
 
@@ -23,7 +23,7 @@ public class Evento implements Comparable<Evento>{
 	
 	private LocalTime ora ; // timestamp dell'evento
 	private TipoEvento tipo ; // tipologia
-	private Paziente paziente ; // chi è il paziente coinvolto nell'evento
+	private Paziente paziente ; // chi e' il paziente coinvolto nell'evento
 	
 	public Evento(LocalTime ora, TipoEvento tipo, Paziente paziente) {
 		super();
